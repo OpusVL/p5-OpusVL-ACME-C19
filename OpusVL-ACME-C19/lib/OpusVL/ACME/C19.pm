@@ -37,32 +37,46 @@ sub new {
     my ($class) = @_;
 
     my $self = bless {
-        matrix  =>  {
-            'respiration_rate'          =>  _generate_matrix_respiration_rate(),
-            'spo2_scale_1'              =>  _generate_matrix_spo2_scale_1(),
-            'air_or_oxygen'             =>  _generate_matrix_air_or_oxygen(),
-            'systolic_blood_pressure'   =>  _generate_matrix_systolic_blood_pressure(),
-            'pulse'                     =>  _generate_matrix_pulse(),
-            'consciousness'             =>  _generate_matrix_consciousness(),
-            'temperature'               =>  _generate_matrix_temperature()
-        },
-        index   =>  [qw(
-            respiration_rate 
-            spo2_scale_1 
-            air_or_oxygen
-            systolic_blood_pressure
-            pulse
-            consciousness
-            temperature
-        )],
-        scores  =>  [3,2,1,0,1,2,3],
+        news2   =>  {
+            matrix  =>  {
+                'respiration_rate'          =>  _generate_matrix_respiration_rate(),
+                'spo2_scale_1'              =>  _generate_matrix_spo2_scale_1(),
+                'air_or_oxygen'             =>  _generate_matrix_air_or_oxygen(),
+                'systolic_blood_pressure'   =>  _generate_matrix_systolic_blood_pressure(),
+                'pulse'                     =>  _generate_matrix_pulse(),
+                'consciousness'             =>  _generate_matrix_consciousness(),
+                'temperature'               =>  _generate_matrix_temperature()
+            },
+            index   =>  {
+                respiration_rate            =>  1,
+                spo2_scale_1                =>  2,
+                air_or_oxygen               =>  4,
+                systolic_blood_pressure     =>  5,
+                pulse                       =>  6,
+                consciousness               =>  7,
+                temperature                 =>  8
+            },
+            scores  =>  [3,2,1,0,1,2,3],
+        }
     }, $class;
 
     return $self;
 }
 
-sub return_matrix_row($self,$row) {
-    return $self->{matrix}->{$row};
+sub news2_index($self) {
+    return sort { $self->{news2}->{index}->{$a} <=> $self->{news2}->{index}->{$b} } keys %{$self->{news2}->{index}};
+}
+
+sub calculate_score($self,$scores = {}) {
+    my %shallow_index = %{$self->{news2}->{index}};
+    foreach my $score_key (keys %{$scores}) {
+        delete $shallow_index{$score_key};
+    }
+    if (keys %shallow_index != 0) {
+        my $display_keys = join(', ',keys %shallow_index);
+        say STDERR "The following keys was missing in the score request: $display_keys";
+        die;
+    }
 }
 
 sub _generate_range($start,$end,$dp = 0,$step = 1) {
