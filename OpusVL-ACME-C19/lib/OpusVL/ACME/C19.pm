@@ -32,10 +32,13 @@ use Data::Dumper;
 
 # Version of this software
 our $VERSION = '0.001';
+my $debug = 0;
 
 # Primary code block
 sub new {
-    my ($class) = @_;
+    my ($class,$set_debug) = @_;
+
+    if ($set_debug) { $debug = 1 }
 
     my $self = bless {
         news2   =>  {
@@ -76,16 +79,22 @@ sub news2_dump_row($self,$matrix_row) {
 
 sub news2_calculate_score($self,$scores = {}) {
     my %shallow_index = %{$self->{news2}->{index}};
+
+    my $state           =   {
+        'fault'     =>  0,
+        'score'     =>  undef
+    };
+    my $journal         =   {};
+    my $news2           =   {};
+
     foreach my $score_key (keys %{$scores}) {
         delete $shallow_index{$score_key};
     }
     if (keys %shallow_index != 0) {
         my $display_keys = join(', ',keys %shallow_index);
-        say STDERR "The following keys was missing in the score request: $display_keys";
-        die;
+        _debug("The following keys was missing in the score request: $display_keys");
+        $state->{fault} = 1;
     }
-
-    my $news2_score;
 
     foreach my $score_index_key ($self->news2_index()) {
         my $input_value             =   $scores->{$score_index_key};
@@ -93,52 +102,86 @@ sub news2_calculate_score($self,$scores = {}) {
         my $validation_ptr          =   $self->{news2}->{matrix}->{$score_index_key};
 
         # Check a value was passed as all are mandatory
-        if (!$input_value)  {
-            say STDERR "Invalid type passed as argument for $score_index_key (NULL)";
-            die;
+        if ($input_value)  {
+            # Strip silly characters off either side of the input value
+            ($input_value) = $input_value =~ m/^.*?([a-zA-Z0-9.]+).*?$/;
         }
-        # Strip silly characters off either side of the input value
-        ($input_value) = $input_value =~ m/^.*?([a-zA-Z0-9.]+).*?$/;
 
         my $found_index;
 
         for (my $i = 0; $i <= $validation_array_size; $i++) {
             my $matrix_element_type = ref($validation_ptr->[0]);
             if ($matrix_element_type eq 'ARRAY')  {
-                if ($input_value !~ m/^\d+(\.\d+)?$/) {
-                    say STDERR "Invalid type passed as argument for $score_index_key ($input_value)";
-                    die;
+                if (!$input_value) {
+                    push @{$journal->{$score_index_key}},
+                        "Invalid type passed as argument for $score_index_key (NULL)";
+                    _debug($journal->{$score_index_key}->[-1]);
+                    $state->{fault} = 1;
+                    last;
                 }
-                my $existence_test = any { $_ == $input_value } @{$validation_ptr->[$i]};
-                if ($existence_test == 1) {
+                elsif ($input_value !~ m/^\d+(\.\d+)?$/) {
+                    push @{$journal->{$score_index_key}},
+                        "Invalid type passed as argument for $score_index_key ($input_value)";
+                    _debug($journal->{$score_index_key}->[-1]);
+                    
+                    $state->{fault} = 1;
+                    last;
+                }
+                elsif (any { $_ == $input_value } @{$validation_ptr->[$i]}) {
                     $found_index = $i;
                     last;
                 }
              }
              elsif ($matrix_element_type eq 'HASH') {
-                if ($validation_ptr->[$i]->{$input_value}) {
+                if (!defined $input_value) {
+                    push @{$journal->{$score_index_key}},
+                        "Invalid type passed as argument for $score_index_key (NULL)";
+                    _debug($journal->{$score_index_key}->[-1]);
+                    $state->{fault} = 1;
+                    last;
+                }
+                elsif ($validation_ptr->[$i]->{$input_value}) {
                     $found_index = $i;
                     last
                 }
             }
-            else {
-                say STDERR "Unexpected type in matrix definion! (type: $matrix_element_type) ";
-                die;
-            }
         }
 
         if (defined $found_index) {
-            $news2_score += $self->{news2}->{scores}->[$found_index];
-            say STDERR "Score for $score_index_key, with value '$input_value': ".$self->{news2}->{scores}->[$found_index];
+            $state->{score} += $self->{news2}->{scores}->[$found_index];
+            $news2->{$score_index_key} = $self->{news2}->{scores}->[$found_index];
+            push @{$journal->{$score_index_key}},
+                "Score for $score_index_key, with value '$input_value': ".$self->{news2}->{scores}->[$found_index];
+            _debug($journal->{$score_index_key}->[-1]);
+        }
+        elsif (defined $input_value) {
+            push @{$journal->{$score_index_key}},
+                "No score for: $score_index_key with value '$input_value'";
+            _debug($journal->{$score_index_key}->[-1]);
+        }
+        elsif (!defined $found_index) {
+            push @{$journal->{$score_index_key}},
+                "No score for: $score_index_key with value 'NULL'";
+            _debug($journal->{$score_index_key}->[-1]);
         }
         else {
-            say STDERR "No score for: $score_index_key with value '$input_value'";
+            _debug("Should not be possible to reach here!");
+            die;
         }
     }
 
-    print STDERR "Total score: $news2_score";
+    if ($state->{fault}) { $state->{score} = undef }
 
-    return $news2_score;
+    my $object_final    =  {
+        'state' =>  $state,
+        'news2' =>  $news2,
+        'log'   =>  $journal
+    };
+        
+
+    _debug("object created: ".Dumper($object_final));
+
+    return $news2;
 }
 
 sub _generate_range($start,$end,$dp = 0,$step = 1) {
@@ -238,6 +281,11 @@ sub _generate_matrix_temperature {
         [_generate_range(39.1,500,1,0.1)],
         []
     ];
+}
+
+sub _debug($text) {
+    if (!$debug) { return }
+    say STDERR $text;
 }
 
 =head1 AUTHOR
