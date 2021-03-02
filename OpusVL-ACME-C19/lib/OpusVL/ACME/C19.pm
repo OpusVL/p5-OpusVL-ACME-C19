@@ -24,6 +24,7 @@ use warnings;
 # Internal perl modules (core,recommended)
 use utf8;
 use experimental qw(signatures);
+use List::Util qw(first any);
 
 # Debug/Reporting modules
 use Carp qw(cluck longmess shortmess);
@@ -64,10 +65,16 @@ sub new {
 }
 
 sub news2_index($self) {
-    return sort { $self->{news2}->{index}->{$a} <=> $self->{news2}->{index}->{$b} } keys %{$self->{news2}->{index}};
+    return  sort { 
+                $self->{news2}->{index}->{$a} <=> $self->{news2}->{index}->{$b} 
+            } keys %{$self->{news2}->{index}};
 }
 
-sub calculate_score($self,$scores = {}) {
+sub news2_dump_row($self,$matrix_row) {
+    return $self->{news2}->{matrix}->{$matrix_row};
+}
+
+sub news2_calculate_score($self,$scores = {}) {
     my %shallow_index = %{$self->{news2}->{index}};
     foreach my $score_key (keys %{$scores}) {
         delete $shallow_index{$score_key};
@@ -76,6 +83,41 @@ sub calculate_score($self,$scores = {}) {
         my $display_keys = join(', ',keys %shallow_index);
         say STDERR "The following keys was missing in the score request: $display_keys";
         die;
+    }
+    foreach my $score_index_key ($self->news2_index()) {
+        my $input_value             =   $scores->{$score_index_key};
+        my $validation_array_size   =   $#{ $self->{news2}->{matrix}->{$score_index_key} };
+        my $validation_ptr          =   $self->{news2}->{matrix}->{$score_index_key};
+
+        my $found_index;
+
+        for (my $i = 0; $i <= $validation_array_size; $i++) {
+            my $matrix_element_type = ref($validation_ptr->[0]);
+            if ($matrix_element_type eq 'ARRAY')  {
+                my $existence_test = any { $_ == $input_value } @{$validation_ptr->[$i]};
+                if ($existence_test == 1) {
+                    $found_index = $i;
+                    last;
+                }
+             }
+             elsif ($matrix_element_type eq 'HASH') {
+                if ($validation_ptr->[$i]->{$input_value}) {
+                    $found_index = $i;
+                    last
+                }
+            }
+            else {
+                say STDERR "Unexpected type in matrix definion! (type: $matrix_element_type) ";
+                die;
+            }
+        }
+
+        if (defined $found_index) {
+            say "Score for $score_index_key: ".$self->{news2}->{scores}->[$found_index];
+        }
+        else {
+            say "No score for: $score_index_key";
+        }
     }
 }
 
