@@ -98,7 +98,7 @@ sub news2_calculate_score($self,$scores = {}) {
             die;
         }
         # Strip silly characters off either side of the input value
-        ($input_value) = $input_value =~ m/^.*?[a-z0-9]+.*?/i;
+        ($input_value) = $input_value =~ m/^.*?([a-zA-Z0-9.]+).*?$/;
 
         my $found_index;
 
