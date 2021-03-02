@@ -97,6 +97,8 @@ sub news2_calculate_score($self,$scores = {}) {
             say STDERR "Invalid type passed as argument for $score_index_key (NULL)";
             die;
         }
+        # Strip silly characters off either side of the input value
+        ($input_value) = $input_value =~ m/^.*?[a-z0-9]+.*?/i;
 
         my $found_index;
 
