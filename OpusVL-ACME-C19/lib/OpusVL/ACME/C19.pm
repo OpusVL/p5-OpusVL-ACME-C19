@@ -84,6 +84,9 @@ sub news2_calculate_score($self,$scores = {}) {
         say STDERR "The following keys was missing in the score request: $display_keys";
         die;
     }
+
+    my $news2_score;
+
     foreach my $score_index_key ($self->news2_index()) {
         my $input_value             =   $scores->{$score_index_key};
         my $validation_array_size   =   $#{ $self->{news2}->{matrix}->{$score_index_key} };
@@ -113,12 +116,17 @@ sub news2_calculate_score($self,$scores = {}) {
         }
 
         if (defined $found_index) {
-            say "Score for $score_index_key: ".$self->{news2}->{scores}->[$found_index];
+            $news2_score += $self->{news2}->{scores}->[$found_index];
+            say STDERR "Score for $score_index_key, with value '$input_value': ".$self->{news2}->{scores}->[$found_index];
         }
         else {
-            say "No score for: $score_index_key";
+            say STDERR "No score for: $score_index_key with value '$input_value'";
         }
     }
+
+    print STDERR "Total score: $news2_score";
+
+    return $news2_score;
 }
 
 sub _generate_range($start,$end,$dp = 0,$step = 1) {
