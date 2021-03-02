@@ -51,6 +51,15 @@ sub new {
                 'consciousness'             =>  _generate_matrix_consciousness(),
                 'temperature'               =>  _generate_matrix_temperature()
             },
+            symbol  =>  {
+                'respiration_rate'          =>  ['≤8',,'9–11','12–20',,'21–24','≥25'],
+                'spo2_scale_1'              =>  ['≤91','92–93','94–95','≥96',undef,undef,undef],
+                'air_or_oxygen'             =>  [undef,'Oxygen',undef,'Air',undef,undef,undef],
+                'systolic_blood_pressure'   =>  ['≤90','91–100','101–110','111–219',undef,undef,'≥220'],
+                'pulse'                     =>  ['≤40',undef,'41–50','51–90','91–110','111–130','≥131'],
+                'consciousness'             =>  [undef,undef,undef,'Alert',undef,undef,'CVPU'],
+                'temperature'               =>  ['≤35.0',,'35.1–36.0','36.1–38.0','38.1–39.0','≥39.1',]
+            },
             index   =>  {
                 respiration_rate            =>  1,
                 spo2_scale_1                =>  2,
@@ -86,17 +95,28 @@ sub news2_calculate_score($self,$scores = {}) {
     };
     my $journal         =   {};
     my $news2           =   {};
+    my $skip        =   {};
 
     foreach my $score_key (keys %{$scores}) {
         delete $shallow_index{$score_key};
     }
-    if (keys %shallow_index != 0) {
-        my $display_keys = join(', ',keys %shallow_index);
-        _debug("The following keys was missing in the score request: $display_keys");
+    foreach my $missing_submission_key (keys %shallow_index) {
+        push @{$journal->{$missing_submission_key}},
+            "Not provided in request";
+        _debug($journal->{$missing_submission_key}->[-1]);
+
+        # Enable skip optimization
+        $skip->{$missing_submission_key} = 1;
+
+        # Mark a fault
         $state->{fault} = 1;
     }
 
     foreach my $score_index_key ($self->news2_index()) {
+        # If we are missing the key, simply skip it
+        if ($skip->{$score_index_key}) { next }
+
+        # Various sizes and ptr's for ease
         my $input_value             =   $scores->{$score_index_key};
         my $validation_array_size   =   $#{ $self->{news2}->{matrix}->{$score_index_key} };
         my $validation_ptr          =   $self->{news2}->{matrix}->{$score_index_key};
@@ -149,7 +169,10 @@ sub news2_calculate_score($self,$scores = {}) {
 
         if (defined $found_index) {
             $state->{score} += $self->{news2}->{scores}->[$found_index];
-            $news2->{$score_index_key} = $self->{news2}->{scores}->[$found_index];
+            $news2->{$score_index_key} = [
+                $self->{news2}->{scores}->[$found_index],
+                $self->{news2}->{symbol}->{$score_index_key}->[$found_index]
+            ];
             push @{$journal->{$score_index_key}},
                 "Score for $score_index_key, with value '$input_value': ".$self->{news2}->{scores}->[$found_index];
             _debug($journal->{$score_index_key}->[-1]);
@@ -177,11 +200,10 @@ sub news2_calculate_score($self,$scores = {}) {
         'news2' =>  $news2,
         'log'   =>  $journal
     };
-        
 
     _debug("object created: ".Dumper($object_final));
 
-    return $news2;
+    return $object_final;
 }
 
 sub _generate_range($start,$end,$dp = 0,$step = 1) {
