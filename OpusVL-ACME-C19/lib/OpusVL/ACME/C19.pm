@@ -92,11 +92,21 @@ sub news2_calculate_score($self,$scores = {}) {
         my $validation_array_size   =   $#{ $self->{news2}->{matrix}->{$score_index_key} };
         my $validation_ptr          =   $self->{news2}->{matrix}->{$score_index_key};
 
+        # Check a value was passed as all are mandatory
+        if (!$input_value)  {
+            say STDERR "Invalid type passed as argument for $score_index_key (NULL)";
+            die;
+        }
+
         my $found_index;
 
         for (my $i = 0; $i <= $validation_array_size; $i++) {
             my $matrix_element_type = ref($validation_ptr->[0]);
             if ($matrix_element_type eq 'ARRAY')  {
+                if ($input_value !~ m/^\d+(\.\d+)?$/) {
+                    say STDERR "Invalid type passed as argument for $score_index_key ($input_value)";
+                    die;
+                }
                 my $existence_test = any { $_ == $input_value } @{$validation_ptr->[$i]};
                 if ($existence_test == 1) {
                     $found_index = $i;
