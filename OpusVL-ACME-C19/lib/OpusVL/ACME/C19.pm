@@ -173,9 +173,9 @@ sub news2_calculate_score($self,$scores = {}) {
                 $self->{news2}->{scores}->[$found_index],
                 $self->{news2}->{symbol}->{$score_index_key}->[$found_index]
             ];
-            push @{$journal->{$score_index_key}},
+            my $msg = 
                 "Score for $score_index_key, with value '$input_value': ".$self->{news2}->{scores}->[$found_index];
-            _debug($journal->{$score_index_key}->[-1]);
+            _debug($msg);
         }
         elsif (defined $input_value) {
             push @{$journal->{$score_index_key}},
@@ -202,6 +202,10 @@ sub news2_calculate_score($self,$scores = {}) {
     };
 
     _debug("object created: ".Dumper($object_final));
+
+    if ($object_final->{state}->{fault} > 0) {
+        die $object_final;
+    }
 
     return $object_final;
 }

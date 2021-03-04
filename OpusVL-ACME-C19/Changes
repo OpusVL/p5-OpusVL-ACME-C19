@@ -1,4 +1,5 @@
 Revision history for OpusVL-ACME-C19
  
-{{NEXT}}
+{NEXT}
+    - Made module die on fault with created object
     - Initial release
