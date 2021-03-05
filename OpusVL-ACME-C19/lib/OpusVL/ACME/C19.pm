@@ -52,7 +52,7 @@ sub new {
                 'temperature'               =>  _generate_matrix_temperature()
             },
             symbol  =>  {
-                'respiration_rate'          =>  ['≤8',,'9–11','12–20',,'21–24','≥25'],
+                'respiration_rate'          =>  ['≤8',undef,'9–11','12–20',undef,'21–24','≥25'],
                 'spo2_scale_1'              =>  ['≤91','92–93','94–95','≥96',undef,undef,undef],
                 'air_or_oxygen'             =>  [undef,'Oxygen',undef,'Air',undef,undef,undef],
                 'systolic_blood_pressure'   =>  ['≤90','91–100','101–110','111–219',undef,undef,'≥220'],
