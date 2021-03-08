@@ -58,7 +58,7 @@ sub new {
                 'systolic_blood_pressure'   =>  ['≤90','91–100','101–110','111–219',undef,undef,'≥220'],
                 'pulse'                     =>  ['≤40',undef,'41–50','51–90','91–110','111–130','≥131'],
                 'consciousness'             =>  [undef,undef,undef,'Alert',undef,undef,'CVPU'],
-                'temperature'               =>  ['≤35.0',,'35.1–36.0','36.1–38.0','38.1–39.0','≥39.1',]
+                'temperature'               =>  ['≤35.0',undef,'35.1–36.0','36.1–38.0','38.1–39.0','≥39.1',undef]
             },
             index   =>  {
                 respiration_rate            =>  1,
