@@ -60,6 +60,15 @@ sub new {
                 'consciousness'             =>  [undef,undef,undef,'Alert',undef,undef,'CVPU'],
                 'temperature'               =>  ['≤35.0',undef,'35.1–36.0','36.1–38.0','38.1–39.0','≥39.1',undef]
             },
+            atcode  =>  {
+                'respiration_rate'          =>  ['at0021',undef,'at0019','at0018',undef,'at0020','at0064'],
+                'spo2_scale_1'              =>  ['at0033','at0032','at0031','at0030',undef,undef,undef],
+                'air_or_oxygen'             =>  [undef,'at0037',undef,'at0036',undef,undef,undef],
+                'systolic_blood_pressure'   =>  ['at0017','at0016','at0015','at0014',undef,undef,'at0067'],
+                'pulse'                     =>  ['at0010',undef,'at0012','at0013','at0068','at0011','at0065'],
+                'consciousness'             =>  [undef,undef,undef,'at0024',undef,undef,'at0025'],
+                'temperature'               =>  ['at0039',undef,'at0023','at0022','at0066','at0038',undef]
+            },
             index   =>  {
                 respiration_rate            =>  1,
                 spo2_scale_1                =>  2,
@@ -153,6 +162,7 @@ sub news2_calculate_score($self,$scores = {}) {
                 }
              }
              elsif ($matrix_element_type eq 'HASH') {
+
                 if (!defined $input_value) {
                     push @{$journal->{$score_index_key}},
                         "Invalid type passed as argument for $score_index_key (NULL)";
@@ -171,7 +181,8 @@ sub news2_calculate_score($self,$scores = {}) {
             $state->{score} += $self->{news2}->{scores}->[$found_index];
             $news2->{$score_index_key} = [
                 $self->{news2}->{scores}->[$found_index],
-                $self->{news2}->{symbol}->{$score_index_key}->[$found_index]
+                $self->{news2}->{symbol}->{$score_index_key}->[$found_index],
+                $self->{news2}->{atcode}->{$score_index_key}->[$found_index],
             ];
             my $msg = 
                 "Score for $score_index_key, with value '$input_value': ".$self->{news2}->{scores}->[$found_index];
@@ -202,10 +213,6 @@ sub news2_calculate_score($self,$scores = {}) {
     };
 
     _debug("object created: ".Dumper($object_final));
-
-    if ($object_final->{state}->{fault} > 0) {
-        die $object_final;
-    }
 
     return $object_final;
 }
