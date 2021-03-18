@@ -79,10 +79,81 @@ sub new {
                 temperature                 =>  8
             },
             scores  =>  [3,2,1,0,1,2,3],
-        }
+        },
+        clinical_risk   =>  [
+            {
+                'localizedDescriptions' => {
+                    'en' => 'Ward-based response.'
+                },
+                'value' => 'at0057',
+                'label' => 'Low',
+                'localizedLabels' => {
+                    'en' => 'Low'
+                }
+            },
+            {
+                'localizedLabels' => {
+                    'en' => 'Low-medium'
+                },
+                'label' => 'Low-medium',
+                'value' => 'at0058',
+                'localizedDescriptions' => {
+                    'en' => 'Urgent ward-based response.'
+                }
+            },
+            {
+                'localizedDescriptions' => {
+                    'en' => 'Key threshold for urgent response.'
+                },
+                'value' => 'at0059',
+                'label' => 'Medium',
+                'localizedLabels' => {
+                    'en' => 'Medium'
+                }
+            },
+            {
+                'value' => 'at0060',
+
+                'localizedDescriptions' => {
+                    'en' => 'Urgent or emergency response.'
+                },
+                'localizedLabels' => {
+                    'en' => 'High'
+                },
+                'label' => 'High'
+            }
+        ],
     }, $class;
 
     return $self;
+}
+
+sub calculate_clinical_risk($self,$assessment) {
+    my $news2_score = $assessment->{score}->{total_score};
+    my $result = do {
+        my $risk_selected;
+
+        if ($news2_score >= 0 && $news2_score <= 4) {
+            $risk_selected = 0
+        }
+        elsif ($news2_score >= 5 && $news2_score <= 6) {
+            $risk_selected = 2
+        }
+        elsif ($news2_score >= 7) {
+            $risk_selected = 3
+        }
+        else {
+            foreach my $observation_set ( keys %{ $assessment->{score} } ) {
+                if (
+                    defined($observation_set->{ordinal})
+                    && $observation_set->{ordinal} >= 3
+                )   { 
+                    $risk_selected = 2;
+                }
+            }
+        }
+        defined($risk_selected) ? $self->{clinical_risk}->[$risk_selected] : undef
+    };
 }
 
 sub news2_index($self) {
@@ -104,7 +175,7 @@ sub news2_calculate_score($self,$scores = {}) {
     };
     my $journal         =   {};
     my $news2           =   {};
-    my $skip        =   {};
+    my $skip            =   {};
 
     foreach my $score_key (keys %{$scores}) {
         delete $shallow_index{$score_key};
