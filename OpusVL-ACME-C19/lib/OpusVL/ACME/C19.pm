@@ -227,13 +227,12 @@ sub news2_calculate_score($self,$scores = {}) {
                     $state->{fault} = 1;
                     last;
                 }
-                elsif (any { $_ == $input_value } @{$validation_ptr->[$i]}) {
+                elsif (any { sprintf('%.02f',$_) == sprintf('%.02f',$input_value) } @{$validation_ptr->[$i]}) {
                     $found_index = $i;
                     last;
                 }
              }
              elsif ($matrix_element_type eq 'HASH') {
-
                 if (!defined $input_value) {
                     push @{$journal->{$score_index_key}},
                         "Invalid type passed as argument for $score_index_key (NULL)";
@@ -295,7 +294,7 @@ sub _generate_range($start,$end,$dp = 0,$step = 1) {
     my $cast        =   sub($input) { return sprintf($dpmask,$input) };
     my $active      =   $start+0;
 
-    while ($active <= $end) {
+    while (($active-$step) <= $end) {
         push(@range,$cast->($active));
         $active += $step;
     }
