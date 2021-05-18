@@ -15,7 +15,7 @@ OpusVL::ACME::C19 - Module abstract placeholder text
 =cut
 
 # Internal perl
-use v5.30.0;
+use v5.20.0;
 
 # Internal perl modules (core)
 use strict;
@@ -177,9 +177,14 @@ sub news2_calculate_score($self,$scores = {}) {
     my $news2           =   {};
     my $skip            =   {};
 
+    if ($shallow_index{respirations}) {
+        $shallow_index{respiration_rate} = delete $shallow_index{respirations};
+    }
+
     foreach my $score_key (keys %{$scores}) {
         delete $shallow_index{$score_key};
     }
+
     foreach my $missing_submission_key (keys %shallow_index) {
         push @{$journal->{$missing_submission_key}},
             "Not provided in request";
